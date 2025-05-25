@@ -1,0 +1,149 @@
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Rearc Data Pipeline using CloudFormation
+
+Resources:
+
+  # S3 Bucket to store data files
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: bls-data
+
+  # SQS queue to be triggered when JSON files are uploaded to S3
+  DataQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: bls-data-queue
+
+  # Permission for S3 to send messages to SQS
+  S3ToSQSPermission:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref DataQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "sqs:SendMessage"
+            Resource: !GetAtt DataQueue.Arn
+            Condition:
+              ArnLike:
+                aws:SourceArn: !GetAtt DataBucket.Arn
+
+  # Notification from S3 to SQS when a JSON file is uploaded to population/ path
+  S3Notification:
+    Type: AWS::S3::BucketNotification
+    Properties:
+      Bucket: !Ref DataBucket
+      NotificationConfiguration:
+        QueueConfigurations:
+          - Event: "s3:ObjectCreated:Put"
+            Queue: !GetAtt DataQueue.Arn
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: .json
+
+  # IAM Role for Lambda execution
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: bls-lambda-execution-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: bls-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                  - sqs:*
+                  - logs:*
+                  - events:PutEvents
+                Resource: "*"
+
+  # Lambda for ingesting data (Parts 1 & 2)
+  IngestLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: bls-ingest-function
+      Handler: ingest.lambda_handler
+      Runtime: python3.12
+      Timeout: 300
+      MemorySize: 256
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: code-bucket
+        S3Key: ingest.zip
+
+  # Lambda for running analytics on new data (Part 3)
+  AnalyticsLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: bls-analytics-function
+      Handler: analytics.lambda_handler
+      Runtime: python3.12
+      Timeout: 300
+      MemorySize: 512
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: code-bucket
+        S3Key: analytics.zip
+
+  # EventBridge Rule to schedule ingest lambda daily
+  IngestScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: DailyIngestSchedule
+      ScheduleExpression: rate(1 day)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt IngestLambda.Arn
+          Id: IngestTarget
+
+  # Permission for EventBridge to invoke ingest lambda
+  PermissionForEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IngestLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt IngestScheduleRule.Arn
+
+  # SQS to trigger analytics lambda when message is added
+  AnalyticsLambdaTrigger:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 1
+      EventSourceArn: !GetAtt DataQueue.Arn
+      FunctionName: !Ref AnalyticsLambda
+      Enabled: true
+
+Outputs:
+
+  BucketName:
+    Description: S3 Bucket storing raw data
+    Value: !Ref DataBucket
+
+  QueueUrl:
+    Description: URL of SQS Queue receiving S3 notifications
+    Value: !Ref DataQueue
+
+  IngestFunction:
+    Description: Lambda function for data ingestion
+    Value: !Ref IngestLambda
+
+  AnalyticsFunction:
+    Description: Lambda function for data analysis
+    Value: !Ref AnalyticsLambda
