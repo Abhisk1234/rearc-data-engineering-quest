@@ -1,4 +1,4 @@
-# 🧠 Rearc Data Engineering Quest Submission - Abhishek Nandgadkar
+# 🧠 Rearc Data Engineering Quest 
 
 This project demonstrates an end-to-end data engineering pipeline using **Python, AWS S3, Lambda, SQS, and CloudFormation** (with LocalStack for local development). It fetches open data from public sources, syncs it to S3, triggers processing pipelines, and generates insights automatically.
 
