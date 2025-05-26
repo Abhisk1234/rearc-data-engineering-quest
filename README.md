@@ -4,6 +4,21 @@ This project demonstrates an end-to-end data engineering pipeline using **Python
 
 ---
 
+## ⚠️ Note on Environment
+
+This project uses **LocalStack (Pro Trial)** for simulating AWS services (S3, Lambda, SQS, IAM, etc.).
+
+Due to the nature of LocalStack:
+- No real IAM enforcement (users/policies simulated only)
+- S3 data is stored locally and not accessible via public AWS endpoints
+
+🔐 If you'd like to reproduce or validate the results:
+1. Clone the repo
+2. Run LocalStack (`docker-compose` or `localstack start`)
+3. Deploy using `build.sh`
+4. Verify using `awslocal` CLI or LocalStack Web UI
+
+
 ## ✅ Step 1: Republish BLS Open Dataset to Amazon S3
 
 - **S3 Bucket**: `bls-data`
@@ -49,4 +64,16 @@ This project demonstrates an end-to-end data engineering pipeline using **Python
   - [`lambda/ingest.py`](./step4_pipeline/lambda/ingest.py): Combines Step 1 & Step 2 (runs daily)
   - [`lambda/analytics.py`](./step4_pipeline/lambda/analytics.py): Triggered via SQS on new `data.json`
 
+## 📸 Screenshots
+
+### 🪣 S3 Bucket with Synced Data Files
+![S3 View](./screenshots/S3.jpg)
+![S3 Bucket Conatins](./screenshots/bls_bucket_data.jpg)
+![S3 Bucket API DATA](./screenshots/api_data.jpg)
+![S3 Bucket PR DATA](./screenshots/pr_data.jpg)
+
+### 📈 Lambda Logs Showing Analytics Output
+![Lambda Functions](./screenshots/lambda_function.jpg)
+![Lambda Function Ingest Function Logs](./screenshots/lambda_ingest_logs.png)
+![Lambda Function Analytics Function Logs](./screenshots/lambda_analytics_logs.png)
 
