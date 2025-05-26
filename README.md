@@ -66,14 +66,15 @@ Due to the nature of LocalStack:
 
 ## 📸 Screenshots
 
-### 🪣 S3 Bucket with Synced Data Files
-![S3 View](./screenshots/S3.jpg)
-![S3 Bucket Conatins](./screenshots/bls_bucket_data.jpg)
-![S3 Bucket API DATA](./screenshots/api_data.jpg)
-![S3 Bucket PR DATA](./screenshots/pr_data.jpg)
+> The screenshots below show the S3 bucket `bls-data` inside LocalStack after successful ingestion from the BLS website and the public API.
+
+- ![S3 Bucket View](./screenshots/S3.jpg)
+- ![BLS Data Files](./screenshots/bls_bucket_data.jpg)
+- ![API JSON File](./screenshots/api_data.jpg)
+- ![PR Series Files](./screenshots/pr_data.jpg)
 
 ### 📈 Lambda Logs Showing Analytics Output
-![Lambda Functions](./screenshots/lambda_function.jpg)
-![Lambda Function Ingest Function Logs](./screenshots/lambda_ingest_logs.png)
-![Lambda Function Analytics Function Logs](./screenshots/lambda_analytics_logs.png)
+- ![Lambda Functions](./screenshots/lambda_function.jpg)
+- ![Lambda Function Ingest Function Logs](./screenshots/lambda_ingest_logs.png)
+- ![Lambda Function Analytics Function Logs](./screenshots/lambda_analytics_logs.png)
 
